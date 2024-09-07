@@ -1845,3 +1845,118 @@ class StreamClient(EnumEnforcer):
         '''
         self._handlers['SCREENER_OPTION'].append(
             _Handler(handler, self.ScreenerFields))
+        
+
+    ##########################################################################
+    # RAW_DATA
+    # Obtain the raw stream data without relabeling.
+
+    class RawHandler(_Handler):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640585>`__
+       
+        '''
+        def label_message(self, msg):
+            return msg
+
+    # self.stream_client._handlers['LEVELONE_EQUITIES'].append(
+    #         Raw_Handler(
+    #             self.handle_raw_level_one_equity,
+    #             self.stream_client.LevelOneEquityFields,
+    #         )
+    #     )
+    async def raw_subs(self, symbols, service, *, fields=None):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640585>`__
+
+        Subscribe to raw data stream for a given service.
+
+        :param symbols: Option symbols to receive quotes for
+        :param service: Service to receive data for
+        :param fields: Iterable of :class:`_BaseFieldEnum` representing
+                       the fields to return in streaming entries. If unset, all
+                       fields will be requested.
+        '''
+        # if fields and self.RawHandler.SYMBOL not in fields:
+        #     fields.append(self.RawHandler.SYMBOL)
+        await self._service_op(symbols, service, 'SUBS', fields=fields)
+
+    async def raw_unsubs(self, symbols, service):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640585>`__
+
+        Un-Subscribe to raw from a given service.
+
+        :param symbols: Symbols to stop receiving data for
+        :param service: Service to unsubscribe from
+        '''
+        await self._service_op(symbols, service, 'UNSUBS')
+
+
+    async def raw_add(self, symbols, service, *, fields=None):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640585>`__
+
+        Subscribe to the raw data of a given service.
+
+        :param symbols: Symbols to receive data for
+        :param service: 
+        :param fields: Iterable of :class:`_BaseFieldEnums` representing
+                       the fields to return in streaming entries. If unset, all
+                       fields will be requested.
+        '''
+        await self._service_op(symbols, service, 'ADD', self.RawHandler, fields)
+
+    def add_raw_handler(self, service, fields, handler):
+        '''
+        `Official documentation <https://developer.tdameritrade.com/content/
+        streaming-data#_Toc504640585>`__
+        '''
+        self._handlers[service].append(_Handler(handler, fields))
+
+
+
+    def get_all_services(self):
+        return [cls.__name__ for cls in _BaseFieldEnum.__subclasses__()]
+
+    def get_service_fields(self):
+        pass
+
+    class Services:
+    # Expose the list of currently available services to the user.
+        ACCT_ACTIVITY = 'ACCT_ACTIVITY'
+        CHART_EQUITY= 'CHART_EQUITY'
+        CHART_FUTURES = 'CHART_FUTURES'
+        LEVELONE_EQUITIES = 'LEVELONE_EQUITIES'
+        LEVELONE_OPTIONS = 'LEVELONE_OPTIONS'
+        LEVELONE_FUTURES = 'LEVELONE_FUTURES'
+        LEVELONE_FOREX = 'LEVELONE_FOREX'
+        LEVELONE_FUTURES_OPTIONS = 'LEVELONE_FUTURES_OPTIONS'
+        NYSE_BOOK = 'NYSE_BOOK'
+        NASDAQ_BOOK = 'NASDAQ_BOOK'
+        OPTIONS_BOOK = 'OPTIONS_BOOK'
+        SCREENER_EQUITY = 'SCREENER_EQUITY'
+        SCREENER_OPTION = 'SCREENER_OPTION'
+
+        FIELDS = {
+            ACCT_ACTIVITY: AccountActivityFields,
+            CHART_EQUITY: self.ChartEquityFields,
+            CHART_FUTURES: self.ChartFuturesFields,
+            LEVELONE_EQUITIES: self.LevelOneEquityFields,
+            LEVELONE_OPTIONS: self.LevelOneForexFields,
+            LEVELONE_FUTURES: self.LevelOneFuturesFields,
+            LEVELONE_FOREX: self.LevelOneForexFields,
+            LEVELONE_FUTURES_OPTIONS: self.LevelOneFuturesOptionsFields,
+            NYSE_BOOK: self.BookFields,
+            NASDAQ_BOOK: self.BookFields,
+            OPTIONS_BOOK: self.BookFields,
+            SCREENER_EQUITY: self.ScreenerFields,
+            SCREENER_OPTION: self.ScreenerFields,
+        }
+
+        def get_service_fields(cls, service):
+            return cls.FIELDS.get(service)
